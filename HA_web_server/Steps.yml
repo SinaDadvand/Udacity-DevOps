@@ -1,0 +1,65 @@
+Set_environment_variables_powershell:
+  description: "Set environment variables using PowerShell"
+  steps:
+    - name: "Set environment variables"
+      shell: pwsh
+      run: |
+        $env:AZURE_SUBSCRIPTION_ID = '${{ secrets.AZURE_SUBSCRIPTION_ID }}'
+        $env:AZURE_CLIENT_ID = '${{ secrets.AZURE_CLIENT_ID }}'
+        $env:AZURE_CLIENT_SECRET = '${{ secrets.AZURE_CLIENT_SECRET }}'
+        $env:AZURE_TENANT_ID = '${{ secrets.AZURE_TENANT_ID }}'
+
+
+        $env:ARM_SUBSCRIPTION_ID = "your-subscription-id"
+        $env:ARM_CLIENT_ID = "your-client-id"
+        $env:ARM_CLIENT_SECRET = "your-client-secret"
+        $env:ARM_TENANT_ID = "your-tenant-id"
+
+Apply_azure_policy:
+  description: "Apply Azure Policy"
+  steps:
+    - name: "Apply Azure Policy"
+      run: |
+        az policy definition create `
+        --name "DenyResourcesWithoutTags" `
+        --display-name "Deny creation of resources without tags" `
+        --description "This policy denies the creation of any resource that does not have tags." `
+        --rules "indexed_tagged_policy.json" `
+        --mode "Indexed"
+
+         az policy assignment create `
+         --name "DenyResourcesWithoutTagsAssignment" `
+         --policy "DenyResourcesWithoutTags" `
+         --scope "/subscriptions/$env:ARM_SUBSCRIPTION_ID/resourceGroups/Azuredevops"  
+
+
+        az policy definition create --name 'tagging-policy' --rules 'indexed_tagged_policy.json' 
+        az policy assignment create --name 'tagging-policy-assignment' --policy 'tagging-policy' --scope "/subscriptions/$env:AZURE_SUBSCRIPTION_ID"
+        az policy assignment list  
+
+        az policy assignment create --name 'tagging-policy' --policy 'indexed_tagged_policy.json' --scope "/subscriptions/$env:AZURE_SUBSCRIPTION_ID"
+        az policy state trigger-scan --name 'tagging-policy' --scope "/subscriptions/$env:AZURE_SUBSCRIPTION_ID"
+        az policy state list --name 'tagging-policy' --scope "/subscriptions/$env:AZURE_SUBSCRIPTION_ID"
+        az policy assignment list  
+
+
+Deploy_packer_image_to_azure:
+  description: "Deploy Packer image to Azure"
+  steps:
+    - name: "Deploy Packer image to Azure"
+      run: |
+        az imgage list 
+        packer build -var-file="variables.json" server.json
+
+        packer build -var 'client_id=${{ secrets.AZURE_CLIENT_ID }}' -var 'client_secret=${{ secrets.AZURE_CLIENT_SECRET }}' -var 'tenant_id=${{ secrets.AZURE_TENANT_ID }}' -var 'subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}' packer_template.json
+        az vm create --resource-group 'costco-rg' --name 'costco-vm' --image 'costco-image' --admin-username 'azureuser' --generate-ssh-keys --custom-data cloud-init.txt --location 'eastus'
+
+Run_Terraform:
+  description: "Run Terraform"
+  steps:
+    - name: "Run Terraform"
+      run: |
+        terraform init
+        terraform plan -out=tfplan
+        terraform apply tfplan
+        terraform output -json > terraform_output.json

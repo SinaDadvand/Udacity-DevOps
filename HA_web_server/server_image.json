@@ -1,0 +1,41 @@
+{
+	"variables": {
+		"tenant_id": "",
+		"client_id": "",
+		"client_secret": "",
+		"subscription_id": ""
+	},
+	"builders": [{
+		"type": "azure-arm",
+		
+		"client_id": "{{user `client_id`}}",
+		"client_secret": "{{user `client_secret`}}",
+		"subscription_id": "{{user `subscription_id`}}",
+		"tenant_id": "{{user `tenant_id`}}",
+
+		"os_type": "Linux",
+		"image_publisher": "Canonical",
+		"image_offer": "UbuntuServer",
+		"image_sku": "18.04-LTS",
+
+		"managed_image_resource_group_name": "Azuredevops",
+		"managed_image_name": "Sina_PackerImage_V1.0",
+
+		"location": "eastus",
+		"vm_size": "Standard_B1s",
+
+		"azure_tags": {
+		"Environment": "Development",
+		"Project": "Udacity_CostcoDevOps_NanoDegree",
+		"Owner": "SinaDVD"
+		}
+	}],
+		"provisioners": [{
+			"inline": [
+				"echo 'Hello, World!' > index.html",
+				"nohup busybox httpd -f -p 80 &"
+			],
+			"inline_shebang": "/bin/sh -x",
+			"type": "shell"
+		}]
+}

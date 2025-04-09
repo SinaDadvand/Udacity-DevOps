@@ -1,4 +1,4 @@
-name: Deploy HA Web Server
+name: "Deploy HA Web Server"
 
 on:
   push:

@@ -2,8 +2,8 @@ name: Deploy HA Web Server
 
 on:
   push:
-    branches:
-      - main
+    paths:
+      - 'HA_web_server/**'
   workflow_dispatch:
 
 jobs:

@@ -1,0 +1,82 @@
+name: Deploy HA Web Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set environment variables
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ env.AZURE_CLIENT_ID }}","clientSecret":"${{ env.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ env.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ env.AZURE_TENANT_ID }}"}'
+
+
+      # - name: Install Azure CLI
+      #   run: |
+      #     curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      # - name: Install Packer
+      #   run: |
+      #     sudo apt-get update && sudo apt-get install -y packer
+
+      # - name: Install Terraform
+      #   run: |
+      #     sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
+      #     curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+      #     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+      #     sudo apt-get update && sudo apt-get install -y terraform
+
+      - name: Azure CLI script
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az account show
+
+      - name: Apply Azure Policy
+        run: |
+          az policy definition create \
+            --name "DenyResourcesWithoutTags" \
+            --display-name "Deny creation of resources without tags" \
+            --description "This policy denies the creation of any resource that does not have tags." \
+            --rules "indexed_tagged_policy.json" \
+            --mode "Indexed"
+
+          az policy assignment create \
+            --name "DenyResourcesWithoutTagsAssignment" \
+            --policy "DenyResourcesWithoutTags" \
+            --scope "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/Azuredevops"
+
+      - name: Deploy Packer image to Azure
+        run: |
+          packer build -var 'client_id=${{ secrets.AZURE_CLIENT_ID }}' \
+            -var 'client_secret=${{ secrets.AZURE_CLIENT_SECRET }}' \
+            -var 'tenant_id=${{ secrets.AZURE_TENANT_ID }}' \
+            -var 'subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}' \
+            -var-file="variables.json" server.json
+
+      - name: Run Terraform
+        run: |
+          terraform init
+          terraform plan -out=tfplan
+          terraform apply tfplan
+          terraform output -json > terraform_output.json

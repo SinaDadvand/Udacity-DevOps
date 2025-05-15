@@ -1,4 +1,3 @@
-# Udacity-DevOps
 # README.md Content Outline - HA_web_server Project
 
 *   **Project Title & Description**
@@ -94,13 +93,19 @@
         *   **Service Principal**: A service principal with the Contributor role assigned to the subscription or resource group.
         *   **Environment Variables**: Set the following environment variables for authentication in PowerShell to be used by Terraform:
              *   Open a PowerShell terminal.
-             *   Use the following commands to set the required environment variables:
-              ```powershell
-              $env:AZURE_SUBSCRIPTION_ID = "<your_subscription_id>"
-              $env:AZURE_CLIENT_ID = "<your_client_id>"
-              $env:AZURE_CLIENT_SECRET = "<your_client_secret>"
-              $env:AZURE_TENANT_ID = "<your_tenant_id>"
-              ```
+            *   Use the following commands to set the required environment variables:
+                ```powershell
+                $env:AZURE_SUBSCRIPTION_ID = "<your_subscription_id>"
+                $env:AZURE_CLIENT_ID = "<your_client_id>"
+                $env:AZURE_CLIENT_SECRET = "<your_client_secret>"
+                $env:AZURE_TENANT_ID = "<your_tenant_id>"
+                
+                # ARM environment variables for Terraform
+                $env:ARM_SUBSCRIPTION_ID = $env:AZURE_SUBSCRIPTION_ID
+                $env:ARM_CLIENT_ID = $env:AZURE_CLIENT_ID
+                $env:ARM_CLIENT_SECRET = $env:AZURE_CLIENT_SECRET
+                $env:ARM_TENANT_ID = $env:AZURE_TENANT_ID
+                ```
              *   Replace `<your_subscription_id>`, `<your_client_id>`, `<your_client_secret>`, and `<your_tenant_id>` with your actual Azure credentials.
              *   These variables will be available in the current PowerShell session and can be accessed by Terraform during deployment.
         *   **Azure CLI Login**: Before deploying Azure policies or building Packer images, log into Azure using the Azure CLI:
@@ -137,6 +142,7 @@
             cd HA_web_server/Packer_file
             ```
         *   Update the `image_variables.json` file with your Azure credentials and other required values.
+        *   Edit the `server_image.json` file and update line 24 to set the `location` property to match the location of your Azure resource group.
         *   Run the following command to build the custom VM image:
             ```bash
             packer build -var-file="image_variables.json" server_image.json
@@ -173,8 +179,9 @@
             export TF_VAR_admin_password="P@ssw0rd123!"
             terraform plan -out=tfplan
             ```
-        *   Apply the execution plan to deploy the infrastructure:
+        *   Plan and apply the Terraform configuration:
             ```bash
+            terraform plan -out solution.plan
             terraform apply tfplan
             ```
         *   Export the Terraform outputs to a JSON file for reference:
@@ -239,21 +246,22 @@ Ensure security best practices are followed throughout the project:
 By adhering to these practices, you can enhance the security of your `HA_web_server` project.
 
 *   **Contact/Support** (Optional)
-    *   How people can get in touch with you if they have questions.
+    *   Contact sina@gmail.com
     * **Example code:**
 
-        ```yaml
-          Set_environment_variables_powershell:
-            description: "Set environment variables using PowerShell"
-            steps:
-              - name: "Set environment variables"
-                shell: pwsh
-                run: |
-                  $env:AZURE_SUBSCRIPTION_ID = '${{ secrets.AZURE_SUBSCRIPTION_ID }}'
-                  $env:AZURE_CLIENT_ID = '${{ secrets.AZURE_CLIENT_ID }}'
-                  $env:AZURE_CLIENT_SECRET = '${{ secrets.AZURE_CLIENT_SECRET }}'
-                  $env:AZURE_TENANT_ID = '${{ secrets.AZURE_TENANT_ID }}'
-        ```
+        ```powershell
+        # Example PowerShell commands to set environment variables
+        $env:AZURE_SUBSCRIPTION_ID = "<your_subscription_id>"
+        $env:AZURE_CLIENT_ID = "<your_client_id>"
+        $env:AZURE_CLIENT_SECRET = "<your_client_secret>"
+        $env:AZURE_TENANT_ID = "<your_tenant_id>"
+
+        # Verify the environment variables are set
+        echo $env:AZURE_SUBSCRIPTION_ID
+        echo $env:AZURE_CLIENT_ID
+        echo $env:AZURE_CLIENT_SECRET
+        echo $env:AZURE_TENANT_ID
+        ```      
         ``` json
               "if": {
                 "field": "tags",
@@ -272,11 +280,4 @@ By adhering to these practices, you can enhance the security of your `HA_web_ser
                 # tenant_id       = var.tenant_id
               }
         ```
-        ```json
-        {
-            "tenant_id": "f958e84a-92b8-439f-a62d-4f45996b6d07",
-            "client_id": "8f00d428-10d0-4fa1-93eb-9eb4774943b4",
-            "client_secret": "ahx8Q~gDNMBuInSCJKk2epoK4BFstx4VvH-5Xbke",
-            "subscription_id": "d6c8f7f9-b69d-4549-b504-b520b7a8ed88"
-          }
-        ```
+

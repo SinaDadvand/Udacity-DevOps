@@ -115,16 +115,20 @@
               ```
             *   Follow the instructions to authenticate with your Azure account. Ensure the correct subscription is selected:
               ```bash
-              az account set --subscription "<your_subscription_id>"
+              az account set --subscription $env:AZURE_SUBSCRIPTION_ID
               ```
             *   Replace `<your_subscription_id>` with your Azure subscription ID.
+            *   Run the following to get the name of resource group and save it as an environment variable
+             ```bash
+             $env:AZURE_RESOURCE_GROUP = az group list --query "[0].name" -o tsv
+             ```
 *   **Setup & Deployment**
     *   Follow these steps to set up and deploy the infrastructure:
 
     *   **Azure Policy**
         *   Open a terminal and navigate to the `Azure_policy` directory:
             ```bash
-            cd HA_web_server/Azure_policy
+            cd Udacity-DevOps/HA_web_server
             ```
         *   Use the Azure CLI to create and apply the policy:
             *   Create the policy definition using the `indexed_tagged_policy.json` file:
@@ -133,16 +137,20 @@
                 ```
             *   Assign the policy to a resource group or subscription:
                 ```bash
-                az policy assignment create --name "EnforceTagsPolicyAssignment" --policy "EnforceTagsPolicy" --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>"
+                az policy assignment create --name "EnforceTagsPolicyAssignment" --policy "EnforceTagsPolicy" --scope "/subscriptions/$env:AZURE_SUBSCRIPTION_ID/resourceGroups/$env:AZURE_RESOURCE_GROUP"
                 ```
 
     *   **Packer Image Build**
         *   Open a terminal and navigate to the `Packer_file` directory:
             ```bash
-            cd HA_web_server/Packer_file
+            cd Udacity-DevOps/HA_web_server
             ```
         *   Update the `image_variables.json` file with your Azure credentials and other required values.
         *   Edit the `server_image.json` file and update line 24 to set the `location` property to match the location of your Azure resource group.
+        * You can find the location of the resource group via this:
+            ```bash
+            az group show --name $env:AZURE_RESOURCE_GROUP --query location -o tsv
+            ```
         *   Run the following command to build the custom VM image:
             ```bash
             packer build -var-file="image_variables.json" server_image.json
@@ -151,7 +159,7 @@
     *   **Terraform Deployment**
         *   Open a terminal and navigate to the `Terraform` directory:
             ```bash
-            cd HA_web_server/Terraform
+            cd Udacity-DevOps/HA_web_server
             ```
             *   Initialize the Terraform working directory:
                 ```bash
@@ -182,7 +190,7 @@
         *   Plan and apply the Terraform configuration:
             ```bash
             terraform plan -out solution.plan
-            terraform apply tfplan
+            terraform apply solution.plan
             ```
         *   Export the Terraform outputs to a JSON file for reference:
             ```bash

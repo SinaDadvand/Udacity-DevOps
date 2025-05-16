@@ -136,21 +136,62 @@ resource "azurerm_network_security_group" "nsg" {
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
 
-# NSG Rules
-# Create NSG rules restricting access to virtual machines from outside the vnet. 
-# The network security group explicitly denies inbound traffic from the internet.
-    security_rule {
-        name                       = "deny-internet-inbound"
-        priority                   = 100
-        direction                  = "Inbound"
-        access                     = "Deny"
-        protocol                   = "*"
-        source_port_range          = "*"
-        destination_port_range     = "*"
-        source_address_prefix      = "Internet"
-        destination_address_prefix = "*"
-        description                = "Deny all inbound traffic from the internet"
-    }
+  # Deny all inbound traffic from the internet (lowest priority)
+  security_rule {
+    name                       = "deny-internet-inbound"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+    description                = "Deny all inbound traffic from the internet"
+  }
+
+  # Allow inbound traffic within the same virtual network
+  security_rule {
+    name                       = "allow-inbound-same-vnet"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "*"
+    description                = "Allow inbound traffic within the same virtual network"
+  }
+
+  # Allow outbound traffic within the same virtual network
+  security_rule {
+    name                       = "allow-outbound-same-vnet"
+    priority                   = 100
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "*"
+    description                = "Allow outbound traffic within the same virtual network"
+  }
+}
+
+# Allow HTTP traffic from Load Balancer to VMs
+resource "azurerm_network_security_group_rule" "lb_rule" {
+  name                        = "http_traffic_from_lb"
+  priority                    = 200
+  direction                   = "Inbound"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "80"
+  source_address_prefix       = "AzureLoadBalancer"
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_id   = azurerm_network_security_group.nsg.id
+  description                 = "Allow HTTP traffic from Azure Load Balancer"
 }
 
 # NSG Association

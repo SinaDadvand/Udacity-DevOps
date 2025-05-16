@@ -177,21 +177,20 @@ resource "azurerm_network_security_group" "nsg" {
     destination_address_prefix = "*"
     description                = "Allow outbound traffic within the same virtual network"
   }
-}
 
-# Allow HTTP traffic from Load Balancer to VMs
-resource "azurerm_network_security_group_rule" "lb_rule" {
-  name                        = "http_traffic_from_lb"
-  priority                    = 200
-  direction                   = "Inbound"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = "80"
-  source_address_prefix       = "AzureLoadBalancer"
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.main.name
-  network_security_group_id   = azurerm_network_security_group.nsg.id
-  description                 = "Allow HTTP traffic from Azure Load Balancer"
+  # Allow HTTP traffic from Load Balancer to VMs
+  security_rule {
+    name                       = "http_traffic_from_lb"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+    description                = "Allow HTTP traffic from Azure Load Balancer"
+  }
 }
 
 # NSG Association

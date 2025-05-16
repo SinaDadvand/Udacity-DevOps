@@ -200,7 +200,7 @@
     *   **Automation**
         *   Open a terminal and navigate to the `Terraform` directory where the `Steps.yml` file is located:
             ```bash
-            cd HA_web_server/Terraform
+            cd Udacity-DevOps/HA_web_server
             ```
         *   Use the `Steps.yml` file to automate the deployment process. This file contains predefined steps for running the required commands.
 
